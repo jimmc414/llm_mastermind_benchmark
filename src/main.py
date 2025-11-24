@@ -84,7 +84,8 @@ Examples:
   # Override: Use API even from CLI
   claude --print "python -m src.main --model gpt-4 --runs 10"
 
-  # Clipboard mode for web UI testing
+  # Clipboard mode for web UI testing (works with any web LLM)
+  python -m src.main --mode clipboard --runs 5
   python -m src.main --mode clipboard --model "chatgpt-web" --runs 5
 
   # Custom game with specific secret
@@ -108,7 +109,7 @@ CLI detection (auto-mode):
 
     # Model (optional - triggers API mode if specified)
     parser.add_argument('--model', type=str,
-                        help='LiteLLM model string (triggers API mode) or CLI tool name for clipboard mode')
+                        help='LiteLLM model string (API mode) or tracking label (clipboard mode, default: web-ui)')
 
     # Game configuration
     game_group = parser.add_argument_group('game configuration')
@@ -191,7 +192,7 @@ CLI detection (auto-mode):
         parser.error("--model is required for api mode")
 
     if final_mode == 'clipboard' and not args.model:
-        args.model = "manual"  # Default label
+        args.model = "web-ui"  # Default label for web-based interfaces
 
     if args.colors < 2:
         parser.error("--colors must be at least 2")

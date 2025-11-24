@@ -66,11 +66,23 @@ python -m src.main --model gemini/gemini-pro --runs 10
 
 ### Clipboard Mode (Manual Testing)
 
-Test web UIs manually:
+Test any web UI manually with automatic clipboard integration. Works with ChatGPT, Claude.ai, Gemini, Perplexity, or any other web-based LLM:
 
 ```bash
-python -m src.main --mode clipboard --model "chatgpt-web"
+# Simple - uses default "web-ui" label
+python -m src.main --mode clipboard --runs 10
+
+# Or specify a custom label to track different web UIs
+python -m src.main --mode clipboard --model "chatgpt-web" --runs 10
+python -m src.main --mode clipboard --model "claude-web" --runs 10
+python -m src.main --mode clipboard --model "perplexity" --runs 10
 ```
+
+**How it works:**
+1. Prompt is automatically copied to your clipboard
+2. Paste into any web LLM interface
+3. Copy the response
+4. Press Enter - automatically reads from clipboard!
 
 ## Configuration Options
 
