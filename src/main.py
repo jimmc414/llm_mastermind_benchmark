@@ -248,8 +248,7 @@ CLI detection (auto-mode):
         cost_info = "(paid)"
     elif final_mode == 'cli':
         cli_config = CLIConfig(
-            cli_tool=detected_cli,
-            timeout=int(args.timeout)
+            cli_tool=detected_cli
         )
         player = CLIPlayer(game_config, cli_config)
         player_label = f"{detected_cli}-cli"
