@@ -4,6 +4,12 @@
 output.txt
 outputs/*.jsonl
 
+# Generated reports
+reports/*.html
+reports/*.md
+reports/*.csv
+reports/*_files/
+
 # Env
 .env
 

@@ -22,6 +22,14 @@ The benchmark is useful for assessing:
 pip install -r requirements.txt
 ```
 
+Dependencies include:
+- `litellm`: Multi-provider LLM API integration
+- `pandas`: Data analysis for report generation
+- `matplotlib`: Visualization charts for HTML reports
+- `tabulate`: Terminal table formatting
+- `pyperclip`: Clipboard integration for manual mode
+- `psutil`: Process detection for CLI auto-detection
+
 Create a `.env` file with API keys for your chosen providers:
 
 ```bash
@@ -202,6 +210,140 @@ For testing web-based LLM interfaces (ChatGPT, Claude.ai, etc.) that lack API ac
 
 This mode preserves full game history and outputs the same JSONL format as API mode.
 
+## Batch Testing and Analysis
+
+The tool includes utilities for systematic benchmarking and analysis across multiple models.
+
+### Orchestrator
+
+Run batch tests across multiple models with identical secrets for fair comparison. Sequential or parallel execution is supported.
+
+```bash
+# Test 3 CLI models with same secret
+python -m src.orchestrator \
+  --models "claude,gemini,codex" \
+  --secret "1,2,3,4" \
+  --runs 10
+
+# Mix CLI and API models
+python -m src.orchestrator \
+  --models "claude,gpt-4,deepseek/deepseek-chat" \
+  --secret "0,5,3,2" \
+  --runs 20
+
+# Parallel execution for faster completion
+python -m src.orchestrator \
+  --models "claude,gemini,codex" \
+  --secret "3,1,4,1" \
+  --runs 10 \
+  --parallel
+
+# Custom difficulty with retry logic
+python -m src.orchestrator \
+  --models "claude,gemini" \
+  --secret "0,5,3,7,2" \
+  --colors 8 \
+  --pegs 5 \
+  --runs 5 \
+  --max-retries 1
+```
+
+Output includes individual JSONL files per model and a summary JSON:
+
+```
+outputs/orchestrator_20251124_003540_claude.jsonl
+outputs/orchestrator_20251124_003540_gemini.jsonl
+outputs/orchestrator_20251124_003540_codex.jsonl
+outputs/orchestrator_20251124_003540_summary.json
+```
+
+### Reporter
+
+Generate analysis reports in multiple formats from result files. Supports HTML with visualizations, Markdown tables, CSV exports, and terminal output.
+
+```bash
+# Generate all format types
+python -m src.reporter \
+  --input "outputs/orchestrator_*.jsonl" \
+  --format html,markdown,csv,terminal
+
+# Quick terminal view
+python -m src.reporter \
+  --input "outputs/*.jsonl" \
+  --format terminal
+
+# HTML report with charts
+python -m src.reporter \
+  --input "outputs/orchestrator_*.jsonl" \
+  --format html \
+  --output reports/benchmark_2024
+
+# Filter by model
+python -m src.reporter \
+  --input "outputs/*.jsonl" \
+  --filter-model claude-cli \
+  --format markdown
+
+# Filter by outcome
+python -m src.reporter \
+  --input "outputs/*.jsonl" \
+  --filter-outcome win \
+  --format csv
+```
+
+Generated reports include:
+
+- Summary statistics per model (win rate, average turns, duration)
+- Win rate comparison charts
+- Turn distribution box plots
+- Token efficiency scatter plots
+- Per-game detailed results
+
+Example markdown output:
+
+```markdown
+| model      | mode | games | wins | losses | errors | win_rate | avg_turns | avg_duration | tokens |
+|------------|------|-------|------|--------|--------|----------|-----------|--------------|--------|
+| gemini-cli | cli  | 10    | 8    | 2      | 0      | 80.0%    | 4.5       | 191.59       | 0      |
+| claude-cli | cli  | 10    | 7    | 3      | 0      | 70.0%    | 5.2       | 187.22       | 0      |
+| codex-cli  | cli  | 10    | 9    | 1      | 0      | 90.0%    | 5.0       | 264.06       | 0      |
+```
+
+### Purge Utility
+
+Clean up old result files with archive or delete options.
+
+```bash
+# Dry run to preview what would be deleted
+python -m src.purge \
+  --pattern "outputs/results_*.jsonl" \
+  --older-than 30d \
+  --dry-run
+
+# Archive files older than 7 days
+python -m src.purge \
+  --older-than 7d \
+  --archive
+
+# Delete specific pattern with confirmation
+python -m src.purge \
+  --pattern "outputs/orchestrator_*.jsonl"
+
+# Force delete without confirmation
+python -m src.purge \
+  --pattern "outputs/results_*.jsonl" \
+  --older-than 30d \
+  --force
+
+# Archive all orchestrator runs
+python -m src.purge \
+  --pattern "outputs/orchestrator_*.jsonl" \
+  --archive \
+  --force
+```
+
+Archived files are moved to `outputs/archive/` with collision handling.
+
 ## Analysis
 
 Key metrics to examine:
@@ -285,9 +427,13 @@ The codebase is organized into discrete modules:
 
 - `game.py`: Core Mastermind logic (no external dependencies)
 - `llm_player.py`: LiteLLM integration and response parsing
+- `cli_player.py`: Local CLI tool integration (Claude Code, Codex, Gemini)
 - `clipboard_player.py`: Manual input workflow
 - `runner.py`: Game session management and result tracking
 - `main.py`: CLI argument parsing and orchestration
+- `orchestrator.py`: Batch testing across multiple models
+- `reporter.py`: Multi-format report generation with visualizations
+- `purge.py`: Result file cleanup utility
 
 All functions include type hints and docstrings.
 

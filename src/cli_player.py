@@ -112,10 +112,30 @@ FEEDBACK:
 - You are NOT told which positions are correct
 
 RESPONSE FORMAT:
-Respond with ONLY a JSON object containing your guess.
+You MUST respond with a valid JSON object containing your guess.
+If you want to explain your reasoning, put the JSON object at the very end of your response.
+
+Required format:
 {{"guess": [0, 1, 2, 3]}}
 
-Do not include any other text or explanation outside the JSON object."""
+CRITICAL: The JSON must be valid and parseable. Wrap it in ```json code fences if including explanations."""
+
+    def _build_json_schema(self) -> str:
+        """Build JSON schema for structured output validation."""
+        import json
+        schema = {
+            "type": "object",
+            "properties": {
+                "guess": {
+                    "type": "array",
+                    "items": {"type": "integer"},
+                    "minItems": self.game_config.num_pegs,
+                    "maxItems": self.game_config.num_pegs
+                }
+            },
+            "required": ["guess"]
+        }
+        return json.dumps(schema)
 
     def _build_prompt(self, game_history: list[dict], retry_count: int) -> str:
         """Build prompt text for CLI tool."""
@@ -149,20 +169,28 @@ Do not include any other text or explanation outside the JSON object."""
         """Call the CLI tool with the prompt."""
         cli_tool = self.cli_config.cli_tool
 
-        # Build command
+        # Build command with output format flags
         if cli_tool == 'claude':
-            cmd = ['claude', '--print']
+            # Use JSON schema for structured output validation
+            schema = self._build_json_schema()
+            cmd = ['claude', '--print', '--output-format', 'json', '--json-schema', schema]
+            stdin_input = prompt
         elif cli_tool == 'codex':
-            cmd = ['codex', '--print']
+            # Codex uses exec subcommand with positional arguments
+            # No JSON output format available, relies on parser
+            cmd = ['codex', 'exec', prompt]
+            stdin_input = None
         elif cli_tool == 'gemini':
-            cmd = ['gemini']
+            # Gemini uses positional arguments for prompts, not stdin
+            cmd = ['gemini', '--output-format', 'json', prompt]
+            stdin_input = None
         else:
             raise CLIError(f"Unknown CLI tool: {cli_tool}")
 
         try:
             result = subprocess.run(
                 cmd,
-                input=prompt,
+                input=stdin_input,
                 capture_output=True,
                 text=True,
                 timeout=self.cli_config.timeout
@@ -190,20 +218,45 @@ Do not include any other text or explanation outside the JSON object."""
         import json
         import re
 
+        # Gemini CLI wraps responses in {"response": "...", "stats": {...}}
+        # Extract the actual response content first
         try:
-            # Try direct JSON parse
+            wrapper = json.loads(response.strip())
+            if "response" in wrapper and isinstance(wrapper["response"], str):
+                response = wrapper["response"]
+        except json.JSONDecodeError:
+            pass
+
+        # Strategy 1: Try direct JSON parse
+        try:
             data = json.loads(response.strip())
             if "guess" in data and isinstance(data["guess"], list):
                 return data["guess"]
         except json.JSONDecodeError:
-            # Try to extract JSON from markdown code blocks
-            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response, re.DOTALL)
-            if json_match:
-                try:
-                    data = json.loads(json_match.group(1))
-                    if "guess" in data and isinstance(data["guess"], list):
-                        return data["guess"]
-                except json.JSONDecodeError:
-                    pass
+            pass
+
+        # Strategy 2: Try to extract JSON from markdown code blocks
+        json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response, re.DOTALL)
+        if json_match:
+            try:
+                data = json.loads(json_match.group(1))
+                if "guess" in data and isinstance(data["guess"], list):
+                    return data["guess"]
+            except json.JSONDecodeError:
+                pass
+
+        # Strategy 3: Try to find last JSON object in response (without code fence)
+        # Look for patterns like {"guess": [1, 2, 3, 4]} at the end
+        json_pattern = r'\{\s*"guess"\s*:\s*\[[\d,\s]+\]\s*\}'
+        matches = list(re.finditer(json_pattern, response))
+        if matches:
+            # Try parsing the last match
+            last_match = matches[-1]
+            try:
+                data = json.loads(last_match.group(0))
+                if "guess" in data and isinstance(data["guess"], list):
+                    return data["guess"]
+            except json.JSONDecodeError:
+                pass
 
         return None
