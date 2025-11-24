@@ -92,6 +92,105 @@ python -m src.main --mode clipboard --model "perplexity" --runs 10
 3. Copy the response
 4. Press Enter - automatically reads from clipboard!
 
+## Complete Workflow Examples
+
+### Batch Benchmark Across Multiple Models
+
+Test all three CLI models plus DeepSeek API with increased difficulty (6 colors, 5 pegs):
+
+```bash
+# Run orchestrator with 4 models, 10 games each, custom difficulty
+python -m src.orchestrator \
+  --models "claude,gemini,codex,deepseek/deepseek-chat" \
+  --secret "0,5,3,2,1" \
+  --colors 6 \
+  --pegs 5 \
+  --runs 10 \
+  --parallel
+
+# Sequential execution if preferred (safer, easier to debug)
+python -m src.orchestrator \
+  --models "claude,gemini,codex,deepseek/deepseek-chat" \
+  --secret "0,5,3,2,1" \
+  --colors 6 \
+  --pegs 5 \
+  --runs 10
+```
+
+This generates individual result files per model and a summary:
+```
+outputs/orchestrator_20251124_003540_claude.jsonl
+outputs/orchestrator_20251124_003540_gemini.jsonl
+outputs/orchestrator_20251124_003540_codex.jsonl
+outputs/orchestrator_20251124_003540_deepseek_deepseek-chat.jsonl
+outputs/orchestrator_20251124_003540_summary.json
+```
+
+### Generate Comprehensive Reports
+
+Create reports in all available formats (HTML with charts, Markdown tables, CSV export, terminal output):
+
+```bash
+# Generate all report formats at once
+python -m src.reporter \
+  --input "outputs/orchestrator_20251124_003540_*.jsonl" \
+  --format html,markdown,csv,terminal \
+  --output reports/benchmark_comparison
+
+# Or generate each format separately with custom output names
+python -m src.reporter \
+  --input "outputs/orchestrator_*.jsonl" \
+  --format html \
+  --output reports/detailed_analysis
+
+python -m src.reporter \
+  --input "outputs/orchestrator_*.jsonl" \
+  --format markdown \
+  --output reports/summary_table
+
+python -m src.reporter \
+  --input "outputs/orchestrator_*.jsonl" \
+  --format csv \
+  --output reports/raw_data
+```
+
+Generated files:
+```
+reports/benchmark_comparison.html           # Interactive report with visualizations
+reports/benchmark_comparison.md             # GitHub-friendly tables
+reports/benchmark_comparison.csv            # Spreadsheet export
+reports/benchmark_comparison_files/         # PNG charts (win_rate, turn_distribution, token_efficiency)
+```
+
+### Complete End-to-End Workflow
+
+```bash
+# Step 1: Run benchmark with multiple models
+python -m src.orchestrator \
+  --models "claude,gemini,codex,deepseek/deepseek-chat" \
+  --secret "0,5,3,2,1" \
+  --colors 6 \
+  --pegs 5 \
+  --runs 20 \
+  --parallel
+
+# Step 2: Generate all report formats
+python -m src.reporter \
+  --input "outputs/orchestrator_*.jsonl" \
+  --format html,markdown,csv,terminal \
+  --output reports/benchmark_$(date +%Y%m%d)
+
+# Step 3: View HTML report in browser
+open reports/benchmark_$(date +%Y%m%d).html  # macOS
+xdg-open reports/benchmark_$(date +%Y%m%d).html  # Linux
+start reports/benchmark_$(date +%Y%m%d).html  # Windows
+
+# Step 4: Archive old results (optional)
+python -m src.purge \
+  --older-than 30d \
+  --archive
+```
+
 ## Configuration Options
 
 ### Mode Selection
