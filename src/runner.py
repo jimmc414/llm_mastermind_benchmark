@@ -8,6 +8,7 @@ import time
 from .game import GameConfig, MastermindGame
 from .llm_player import LLMPlayer
 from .clipboard_player import ClipboardPlayer
+from .cli_player import CLIPlayer
 
 
 @dataclass
@@ -175,6 +176,13 @@ class GameSession:
                 "max_tokens": self.player.llm_config.max_tokens,
                 "use_parser_fallback": self.player.llm_config.use_parser_fallback,
                 "parser_model": self.player.llm_config.parser_model if self.player.llm_config.use_parser_fallback else None
+            }
+        elif isinstance(self.player, CLIPlayer):
+            return {
+                "mode": "cli",
+                "model": f"{self.player.cli_config.cli_tool}-cli",
+                "temperature": None,
+                "max_tokens": None
             }
         else:  # ClipboardPlayer
             return {

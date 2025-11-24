@@ -1,6 +1,9 @@
 # Mastermind LLM Benchmark
 
-A Python CLI tool for benchmarking LLM logical deduction capabilities through the game Mastermind. Supports multiple LLM providers via LiteLLM and includes a manual clipboard mode for testing web-based interfaces.
+A Python CLI tool for benchmarking LLM logical deduction capabilities through the game Mastermind. Supports:
+- **100+ LLM providers** via LiteLLM API (OpenAI, Anthropic, Google, DeepSeek, etc.)
+- **CLI auto-detection** for Claude Code, OpenAI Codex, and Gemini CLI tools (free with subscription)
+- **Clipboard mode** for manual testing of web-based interfaces
 
 ## Overview
 
@@ -28,25 +31,59 @@ cp .env.example .env
 
 ## Quick Start
 
-Run a single game with DeepSeek:
+### CLI Auto-Detection (FREE with subscription)
+
+Run from Claude Code CLI - automatically detects and uses local CLI:
 
 ```bash
-python -m src.main --model deepseek/deepseek-chat
+claude --print "python -m src.main --runs 10"
 ```
 
-Run 10 games and save detailed results:
+From Codex or Gemini CLI:
 
 ```bash
-python -m src.main --model deepseek/deepseek-chat --runs 10 --verbose
+codex --print "python -m src.main --runs 10"
+gemini --print "python -m src.main --runs 10"
 ```
 
-Test a web UI manually using clipboard mode:
+### API Mode (PAID - uses API keys)
+
+Run with any LLM provider via API:
 
 ```bash
-python src/main.py --mode clipboard --model "chatgpt-web"
+# DeepSeek
+python -m src.main --model deepseek/deepseek-chat --runs 10
+
+# OpenAI
+python -m src.main --model gpt-4 --runs 10
+
+# Anthropic
+python -m src.main --model claude-3-5-sonnet-20241022 --runs 10
+
+# Google
+python -m src.main --model gemini/gemini-pro --runs 10
+```
+
+### Clipboard Mode (Manual Testing)
+
+Test web UIs manually:
+
+```bash
+python -m src.main --mode clipboard --model "chatgpt-web"
 ```
 
 ## Configuration Options
+
+### Mode Selection
+
+```
+--mode MODE    Execution mode: auto (default), api, cli, clipboard
+```
+
+- **auto** (default): Automatically detects CLI parent process (claude/codex/gemini) and uses CLI. Falls back to requiring --model.
+- **api**: Uses LiteLLM to call any LLM provider via API (requires --model)
+- **cli**: Forces CLI mode (requires running from CLI tool or --model with cli tool name)
+- **clipboard**: Manual input mode for testing web UIs
 
 ### Game Parameters
 
@@ -82,13 +119,25 @@ python src/main.py --mode clipboard --model "chatgpt-web"
 
 ## Model Compatibility
 
-The tool uses LiteLLM, which provides a unified interface to most major providers. Model string examples:
+### API Mode (via LiteLLM)
+
+The tool uses LiteLLM, which provides a unified interface to 100+ LLM providers. Model string examples:
 
 - DeepSeek: `deepseek/deepseek-chat`, `deepseek/deepseek-coder`, `deepseek/deepseek-reasoner`
 - OpenAI: `gpt-4`, `gpt-4-turbo`, `gpt-3.5-turbo`
 - Anthropic: `claude-3-5-sonnet-20241022`, `claude-3-opus-20240229`
 - Google: `gemini/gemini-pro`, `gemini/gemini-1.5-pro`
-- Others: See [LiteLLM documentation](https://docs.litellm.ai/docs/providers)
+- Azure, AWS Bedrock, Cohere, Mistral, and 90+ more: See [LiteLLM documentation](https://docs.litellm.ai/docs/providers)
+
+### CLI Mode (Local Tools)
+
+Supports local CLI tools with automatic detection:
+
+- **Claude Code CLI**: Run `claude --version` to verify installation (from Claude Max subscription)
+- **OpenAI Codex CLI**: Run `codex --version` to verify installation (from ChatGPT Pro subscription)
+- **Gemini CLI**: Run `gemini --version` to verify installation
+
+When running from these CLIs, the tool automatically detects the parent process and uses the local CLI instead of API calls.
 
 ## Output Format
 
