@@ -28,16 +28,16 @@ cp .env.example .env
 
 ## Quick Start
 
-Run a single game with GPT-4:
+Run a single game with DeepSeek:
 
 ```bash
-python src/main.py --model gpt-4
+python -m src.main --model deepseek/deepseek-chat
 ```
 
 Run 10 games and save detailed results:
 
 ```bash
-python src/main.py --model gpt-4 --runs 10 --verbose
+python -m src.main --model deepseek/deepseek-chat --runs 10 --verbose
 ```
 
 Test a web UI manually using clipboard mode:
@@ -82,6 +82,7 @@ python src/main.py --mode clipboard --model "chatgpt-web"
 
 The tool uses LiteLLM, which provides a unified interface to most major providers. Model string examples:
 
+- DeepSeek: `deepseek/deepseek-chat`, `deepseek/deepseek-coder`, `deepseek/deepseek-reasoner`
 - OpenAI: `gpt-4`, `gpt-4-turbo`, `gpt-3.5-turbo`
 - Anthropic: `claude-3-5-sonnet-20241022`, `claude-3-opus-20240229`
 - Google: `gemini/gemini-pro`, `gemini/gemini-1.5-pro`
@@ -101,7 +102,7 @@ Results are saved as JSONL (one JSON object per line), with each game containing
   },
   "llm_config": {
     "mode": "api",
-    "model": "gpt-4",
+    "model": "deepseek/deepseek-chat",
     "temperature": 0.7,
     "max_tokens": 500
   },
