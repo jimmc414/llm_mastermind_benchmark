@@ -131,7 +131,7 @@ FEEDBACK:
 
 RESPONSE FORMAT:
 Respond with ONLY a JSON object containing your guess.
-{{"guess": [0, 1, 2, 3]}}
+{{"guess": [{', '.join(str(i) for i in range(self.game_config.num_pegs))}]}}
 
 Do not include any other text or explanation outside the JSON object."""
 
@@ -192,7 +192,7 @@ Response:
 {response}
 
 Output ONLY valid JSON in this exact format:
-{{"guess": [0, 1, 2, 3]}}"""
+{{"guess": [{', '.join(str(i) for i in range(self.game_config.num_pegs))}]}}"""
 
             result = litellm.completion(
                 model=self.llm_config.parser_model,

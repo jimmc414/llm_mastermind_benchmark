@@ -79,6 +79,9 @@ def run_single_model(
         cmd.append('--verbose')
 
     # Run with retries
+    # CLI tools need longer timeout due to verbose structured output
+    timeout = 1800 if mode == 'cli' else 600  # 30 min for CLI, 10 min for API
+
     for attempt in range(max_retries + 1):
         try:
             if verbose:
@@ -88,7 +91,7 @@ def run_single_model(
                 cmd,
                 capture_output=not verbose,
                 text=True,
-                timeout=600  # 10 minute timeout per model
+                timeout=timeout
             )
 
             if result.returncode == 0:
@@ -282,24 +285,26 @@ Examples:
 
     if args.parallel:
         print("Running models in parallel...")
+        completed = 0
         with ProcessPoolExecutor(max_workers=len(models)) as executor:
             futures = {executor.submit(run_single_model, *task): task[0] for task in tasks}
 
             for future in as_completed(futures):
                 model = futures[future]
+                completed += 1
                 try:
                     result = future.result()
                     results.append(result)
 
                     if result['status'] == 'success':
-                        print(f"✓ {model}: {result['wins']}/{result['runs']} wins "
+                        print(f"[{completed}/{len(tasks)}] ✓ {model}: {result['wins']}/{result['runs']} wins "
                               f"({result['win_rate']*100:.1f}%), "
                               f"avg turns: {result['avg_turns_when_won']}")
                     else:
-                        print(f"✗ {model}: {result['status']} - {result.get('error', 'Unknown error')[:80]}")
+                        print(f"[{completed}/{len(tasks)}] ✗ {model}: {result['status']} - {result.get('error', 'Unknown error')[:80]}")
 
                 except Exception as e:
-                    print(f"✗ {model}: Unexpected error - {str(e)[:80]}")
+                    print(f"[{completed}/{len(tasks)}] ✗ {model}: Unexpected error - {str(e)[:80]}")
                     results.append({
                         'model': model,
                         'status': 'error',

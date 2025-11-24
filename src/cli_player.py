@@ -116,7 +116,7 @@ You MUST respond with a valid JSON object containing your guess.
 If you want to explain your reasoning, put the JSON object at the very end of your response.
 
 Required format:
-{{"guess": [0, 1, 2, 3]}}
+{{"guess": [{', '.join(str(i) for i in range(self.game_config.num_pegs))}]}}
 
 CRITICAL: The JSON must be valid and parseable. Wrap it in ```json code fences if including explanations."""
 
