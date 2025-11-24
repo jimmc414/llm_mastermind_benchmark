@@ -27,7 +27,7 @@ class GameResult:
 class GameSession:
     """Manages a complete game session with retry logic."""
 
-    def __init__(self, game_config: GameConfig, player, max_retries: int = 1, secret: Optional[list[int]] = None):
+    def __init__(self, game_config: GameConfig, player, max_retries: int = 1, secret: Optional[list[int]] = None, max_api_calls: int = 100, timeout_seconds: float = 300):
         """
         Initialize game session.
 
@@ -36,11 +36,15 @@ class GameSession:
             player: LLMPlayer or ClipboardPlayer instance
             max_retries: Maximum retries for invalid guesses per turn
             secret: Optional predefined secret code
+            max_api_calls: Maximum total API calls per game (default: 100)
+            timeout_seconds: Maximum time allowed per game in seconds (default: 300)
         """
         self.game_config = game_config
         self.player = player
         self.max_retries = max_retries
         self.predefined_secret = secret
+        self.max_api_calls = max_api_calls
+        self.timeout_seconds = timeout_seconds
 
     def run(self) -> GameResult:
         """Run a complete game and return results."""
@@ -50,11 +54,28 @@ class GameSession:
         turns = []
         total_tokens = {"input": 0, "output": 0}
         outcome = "loss"
+        api_call_count = 0
 
         try:
             while not game.is_game_over():
+                # Check timeout
+                elapsed = time.time() - start_time
+                if elapsed > self.timeout_seconds:
+                    outcome = "error"
+                    turns.append({"error": f"Game timeout after {self.timeout_seconds}s (safety limit)"})
+                    break
+
+                # Check API call limit
+                if api_call_count >= self.max_api_calls:
+                    outcome = "error"
+                    turns.append({"error": f"Max API calls reached ({self.max_api_calls}) (safety limit)"})
+                    break
+
                 turn_result = self._execute_turn(game, turns)
                 turns.append(turn_result)
+
+                # Count API calls (each turn makes at least one)
+                api_call_count += 1
 
                 # Track tokens
                 if "tokens" in turn_result:

@@ -97,6 +97,10 @@ Model string examples:
                             help='Random seed for reproducibility')
     exec_group.add_argument('--verbose', action='store_true',
                             help='Verbose logging')
+    exec_group.add_argument('--max-api-calls', type=int, default=100,
+                            help='Maximum API calls per game (safety limit, default: 100)')
+    exec_group.add_argument('--timeout', type=float, default=300,
+                            help='Maximum seconds per game (safety limit, default: 300)')
 
     args = parser.parse_args()
 
@@ -163,6 +167,7 @@ Model string examples:
     # Run games
     print(f"Running {args.runs} game(s) with {args.model}")
     print(f"Config: {args.colors} colors, {args.pegs} pegs, duplicates={'yes' if game_config.allow_duplicates else 'no'}, max_turns={args.max_turns or 'unlimited'}")
+    print(f"Safety limits: max {args.max_api_calls} API calls, {args.timeout}s timeout per game")
     print(f"Output: {output_path}")
     print()
 
@@ -172,8 +177,15 @@ Model string examples:
         for run in range(1, args.runs + 1):
             print(f"Game {run}/{args.runs}")
 
-            # Create session with optional predefined secret
-            session = GameSession(game_config, player, args.max_retries, secret=predefined_secret)
+            # Create session with optional predefined secret and safety limits
+            session = GameSession(
+                game_config,
+                player,
+                args.max_retries,
+                secret=predefined_secret,
+                max_api_calls=args.max_api_calls,
+                timeout_seconds=args.timeout
+            )
             result = session.run()
 
             # Update summary

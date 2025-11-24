@@ -72,10 +72,12 @@ python src/main.py --mode clipboard --model "chatgpt-web"
 ### Execution Parameters
 
 ```
---runs N        Number of games to run (default: 1)
---output PATH   Custom output file path
---seed N        Random seed for reproducibility
---verbose       Show detailed turn-by-turn output
+--runs N            Number of games to run (default: 1)
+--output PATH       Custom output file path
+--seed N            Random seed for reproducibility
+--verbose           Show detailed turn-by-turn output
+--max-api-calls N   Maximum API calls per game (default: 100, safety limit)
+--timeout N         Maximum seconds per game (default: 300, safety limit)
 ```
 
 ## Model Compatibility
@@ -158,6 +160,24 @@ Common patterns observed:
 
 ## Implementation Notes
 
+### Safety Limits
+
+To prevent runaway API costs, the tool includes automatic safety limits:
+
+- **Max API calls per game**: Default 100 calls (configurable with `--max-api-calls`)
+- **Timeout per game**: Default 300 seconds / 5 minutes (configurable with `--timeout`)
+
+If either limit is reached, the game terminates with `outcome: "error"` and saves partial results. These limits protect against:
+- Infinite retry loops from API errors
+- Slow/hanging API responses
+- Bugs causing excessive API calls
+- Unexpected cost escalation
+
+For games requiring more turns, increase limits accordingly:
+```bash
+python -m src.main --model deepseek/deepseek-chat --max-api-calls 200 --timeout 600
+```
+
 ### Error Handling
 
 The tool implements several layers of error handling:
@@ -166,6 +186,7 @@ The tool implements several layers of error handling:
 - Parse errors: Optional parser model fallback
 - Invalid guesses: Configurable retries, then counted as failed turns
 - Fatal errors: Partial game state saved with `outcome: "error"`
+- Safety limits: Automatic termination if limits exceeded
 
 ### Deterministic Behavior
 
