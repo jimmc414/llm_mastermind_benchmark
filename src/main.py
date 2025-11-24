@@ -35,16 +35,19 @@ def main():
         epilog="""
 Examples:
   # API mode with GPT-4
-  python src/main.py --model gpt-4 --runs 10
+  python -m src.main --model gpt-4 --runs 10
 
   # Clipboard mode for web UI testing
-  python src/main.py --mode clipboard --model "chatgpt-web" --runs 5
+  python -m src.main --mode clipboard --model "chatgpt-web" --runs 5
 
   # Custom game with specific secret
-  python src/main.py --model claude-3-5-sonnet-20241022 --colors 8 --pegs 5 --secret "1,2,3,4,5"
+  python -m src.main --model claude-3-5-sonnet-20241022 --colors 8 --pegs 5 --secret "1,2,3,4,5"
 
-  # Hard mode: no duplicates, limited turns
-  python src/main.py --model gpt-4 --no-duplicates --max-turns 10 --runs 20
+  # Hard mode: no duplicates, fewer turns
+  python -m src.main --model gpt-4 --no-duplicates --max-turns 8 --runs 20
+
+  # Extended mode: more turns for difficult puzzles
+  python -m src.main --model gpt-4 --max-turns 20 --runs 10
 
 Model string examples:
   OpenAI: gpt-4, gpt-4-turbo, gpt-3.5-turbo
@@ -69,8 +72,8 @@ Model string examples:
                             help='Number of pegs (default: 4)')
     game_group.add_argument('--no-duplicates', action='store_true',
                             help='Disallow duplicate colors (default: allow)')
-    game_group.add_argument('--max-turns', type=int, default=None,
-                            help='Maximum turns (default: unlimited)')
+    game_group.add_argument('--max-turns', type=int, default=12,
+                            help='Maximum turns (default: 12)')
     game_group.add_argument('--secret', type=str, default=None,
                             help='Predefined secret as comma-separated integers (e.g., "1,2,3,4")')
 
@@ -166,7 +169,7 @@ Model string examples:
 
     # Run games
     print(f"Running {args.runs} game(s) with {args.model}")
-    print(f"Config: {args.colors} colors, {args.pegs} pegs, duplicates={'yes' if game_config.allow_duplicates else 'no'}, max_turns={args.max_turns or 'unlimited'}")
+    print(f"Config: {args.colors} colors, {args.pegs} pegs, duplicates={'yes' if game_config.allow_duplicates else 'no'}, max_turns={args.max_turns}")
     print(f"Safety limits: max {args.max_api_calls} API calls, {args.timeout}s timeout per game")
     print(f"Output: {output_path}")
     print()
@@ -189,7 +192,8 @@ Model string examples:
             result = session.run()
 
             # Update summary
-            results_summary[result.outcome + "s"] += 1
+            outcome_key = {"win": "wins", "loss": "losses", "error": "errors"}[result.outcome]
+            results_summary[outcome_key] += 1
 
             # Write result
             f.write(json.dumps(asdict(result)) + '\n')

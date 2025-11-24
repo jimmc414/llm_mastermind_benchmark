@@ -54,7 +54,7 @@ python src/main.py --mode clipboard --model "chatgpt-web"
 --colors N         Number of distinct colors (default: 6)
 --pegs N          Length of the secret code (default: 4)
 --no-duplicates   Disallow repeated colors in the secret
---max-turns N     Limit total guesses (default: unlimited)
+--max-turns N     Maximum number of guesses (default: 12)
 --secret X,Y,Z    Use a specific secret for reproducibility
 ```
 
@@ -162,20 +162,22 @@ Common patterns observed:
 
 ### Safety Limits
 
-To prevent runaway API costs, the tool includes automatic safety limits:
+To prevent runaway API costs, the tool includes multiple safety limits:
 
+- **Max turns per game**: Default 12 turns (configurable with `--max-turns`)
 - **Max API calls per game**: Default 100 calls (configurable with `--max-api-calls`)
 - **Timeout per game**: Default 300 seconds / 5 minutes (configurable with `--timeout`)
 
-If either limit is reached, the game terminates with `outcome: "error"` and saves partial results. These limits protect against:
+If any limit is reached, the game terminates with `outcome: "loss"` or `outcome: "error"` and saves partial results. These limits protect against:
+- LLMs getting stuck in reasoning loops
 - Infinite retry loops from API errors
 - Slow/hanging API responses
 - Bugs causing excessive API calls
 - Unexpected cost escalation
 
-For games requiring more turns, increase limits accordingly:
+For harder games requiring more turns, increase limits accordingly:
 ```bash
-python -m src.main --model deepseek/deepseek-chat --max-api-calls 200 --timeout 600
+python -m src.main --model deepseek/deepseek-chat --max-turns 20 --max-api-calls 200 --timeout 600
 ```
 
 ### Error Handling
