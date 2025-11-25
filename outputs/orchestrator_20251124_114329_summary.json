@@ -1,0 +1,62 @@
+{
+  "batch_name": "orchestrator_20251124_114329",
+  "timestamp": "2025-11-24T12:04:37.491569Z",
+  "config": {
+    "secret": [
+      2,
+      4,
+      1,
+      5
+    ],
+    "colors": 6,
+    "pegs": 4,
+    "allow_duplicates": true,
+    "max_turns": 12,
+    "runs_per_model": 2
+  },
+  "execution": {
+    "parallel": false,
+    "max_retries": 0
+  },
+  "results": [
+    {
+      "model": "claude",
+      "mode": "cli",
+      "status": "success",
+      "runs": 2,
+      "wins": 0,
+      "losses": 2,
+      "errors": 0,
+      "win_rate": 0.0,
+      "avg_turns_when_won": 0,
+      "total_duration": 430.5,
+      "output_file": "outputs/orchestrator_20251124_114329_claude.jsonl"
+    },
+    {
+      "model": "codex",
+      "mode": "cli",
+      "status": "success",
+      "runs": 2,
+      "wins": 2,
+      "losses": 0,
+      "errors": 0,
+      "win_rate": 1.0,
+      "avg_turns_when_won": 5.5,
+      "total_duration": 289.27,
+      "output_file": "outputs/orchestrator_20251124_114329_codex.jsonl"
+    },
+    {
+      "model": "gemini",
+      "mode": "cli",
+      "status": "success",
+      "runs": 2,
+      "wins": 1,
+      "losses": 0,
+      "errors": 1,
+      "win_rate": 0.5,
+      "avg_turns_when_won": 5.0,
+      "total_duration": 540.87,
+      "output_file": "outputs/orchestrator_20251124_114329_gemini.jsonl"
+    }
+  ]
+}
