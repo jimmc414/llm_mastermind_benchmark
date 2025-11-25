@@ -152,6 +152,33 @@ CLI detection (auto-mode):
     exec_group.add_argument('--timeout', type=float, default=300,
                             help='Maximum seconds per game (safety limit, default: 300)')
 
+    # CLI flag testing options
+    cli_test_group = parser.add_argument_group('cli flag testing (cli mode only)')
+    cli_test_group.add_argument(
+        '--no-json-schema', action='store_true',
+        help='Disable JSON schema (Test E)'
+    )
+    cli_test_group.add_argument(
+        '--model-override', type=str, default=None,
+        help='Override model (Test G: sonnet)'
+    )
+    cli_test_group.add_argument(
+        '--append-prompt', type=str, default=None,
+        help='Append to system prompt (Test H)'
+    )
+    cli_test_group.add_argument(
+        '--no-tools', action='store_true',
+        help='Disable all tools (Test J)'
+    )
+    cli_test_group.add_argument(
+        '--prompt-prefix', type=str, default=None,
+        help='Prefix for prompt (Test K: Ultrathink)'
+    )
+    cli_test_group.add_argument(
+        '--strict-schema', action='store_true',
+        help='Use additionalProperties:false (Test L)'
+    )
+
     args = parser.parse_args()
 
     # Determine execution mode
@@ -248,7 +275,15 @@ CLI detection (auto-mode):
         cost_info = "(paid)"
     elif final_mode == 'cli':
         cli_config = CLIConfig(
-            cli_tool=detected_cli
+            cli_tool=detected_cli,
+            timeout=120,
+            use_json_schema=not args.no_json_schema,
+            use_output_format_json=True,
+            model_override=args.model_override,
+            append_system_prompt=args.append_prompt,
+            tools_override='' if args.no_tools else None,
+            prompt_prefix=args.prompt_prefix,
+            strict_schema=args.strict_schema
         )
         player = CLIPlayer(game_config, cli_config)
         player_label = f"{detected_cli}-cli"
