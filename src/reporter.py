@@ -101,9 +101,12 @@ def calculate_statistics(df: pd.DataFrame) -> pd.DataFrame:
 
         win_rate = wins / total_games if total_games > 0 else 0
 
-        # Only calculate avg_turns for wins
+        # Only calculate turn stats for wins
         win_df = model_df[model_df['outcome'] == 'win']
         avg_turns = win_df['total_turns'].mean() if len(win_df) > 0 else 0
+        min_turns = int(win_df['total_turns'].min()) if len(win_df) > 0 else 0
+        max_turns = int(win_df['total_turns'].max()) if len(win_df) > 0 else 0
+        win_turns_list = list(win_df['total_turns'].values) if len(win_df) > 0 else []
 
         avg_duration = model_df['duration_seconds'].mean()
         total_tokens = model_df['total_tokens'].sum()
@@ -118,6 +121,9 @@ def calculate_statistics(df: pd.DataFrame) -> pd.DataFrame:
             'errors': errors,
             'win_rate': win_rate,
             'avg_turns_when_won': round(avg_turns, 2),
+            'min_turns': min_turns,
+            'max_turns': max_turns,
+            'win_turns': ', '.join(str(int(t)) for t in win_turns_list) if win_turns_list else '-',
             'avg_duration': round(avg_duration, 2),
             'total_tokens': int(total_tokens),
             'avg_tokens_per_game': round(avg_tokens, 1)
@@ -420,19 +426,16 @@ def generate_terminal_report(df: pd.DataFrame, stats_df: pd.DataFrame):
     for _, row in stats_df.iterrows():
         table_data.append([
             row['model'],
-            row['mode'],
             row['total_games'],
             row['wins'],
             row['losses'],
-            row['errors'],
             f"{row['win_rate']*100:.1f}%",
-            f"{row['avg_turns_when_won']:.1f}",
-            f"{row['avg_duration']:.2f}",
-            f"{row['total_tokens']:,}"
+            f"{row['avg_turns_when_won']:.1f}" if row['wins'] > 0 else '-',
+            f"{row['min_turns']}-{row['max_turns']}" if row['wins'] > 0 else '-',
+            row['win_turns'] if row['wins'] > 0 else '-',
         ])
 
-    headers = ['Model', 'Mode', 'Games', 'Wins', 'Losses', 'Errors',
-               'Win Rate', 'Avg Turns', 'Avg Dur(s)', 'Tokens']
+    headers = ['Model', 'Games', 'Wins', 'Losses', 'Win Rate', 'Avg Turns', 'Min-Max', 'Win Turns']
 
     print(tabulate(table_data, headers=headers, tablefmt='grid'))
 

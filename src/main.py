@@ -151,6 +151,8 @@ CLI detection (auto-mode):
                             help='Maximum API calls per game (safety limit, default: 100)')
     exec_group.add_argument('--timeout', type=float, default=300,
                             help='Maximum seconds per game (safety limit, default: 300)')
+    exec_group.add_argument('--turn-log', type=str, default=None,
+                            help='Output JSONL file for per-turn logging (optional, for progress monitoring)')
 
     # CLI flag testing options
     cli_test_group = parser.add_argument_group('cli flag testing (cli mode only)')
@@ -303,6 +305,29 @@ CLI detection (auto-mode):
 
     results_summary = {"wins": 0, "losses": 0, "errors": 0}
 
+    # Setup turn log if specified
+    turn_log_file = None
+    turn_callback = None
+    if args.turn_log:
+        turn_log_path = Path(args.turn_log)
+        turn_log_path.parent.mkdir(parents=True, exist_ok=True)
+        turn_log_file = open(turn_log_path, 'a')
+        print(f"Turn log: {turn_log_path}")
+
+        def turn_callback(game_num, turn_data, secret):
+            """Write each turn to the turn log file."""
+            log_entry = {
+                "game": game_num,
+                "turn": turn_data.get("turn_number"),
+                "guess": turn_data.get("guess"),
+                "feedback": turn_data.get("feedback"),
+                "error": turn_data.get("error"),
+                "secret": secret,
+                "timestamp": datetime.now().isoformat()
+            }
+            turn_log_file.write(json.dumps(log_entry) + '\n')
+            turn_log_file.flush()
+
     with open(output_path, 'a') as f:
         for run in range(1, args.runs + 1):
             print(f"Game {run}/{args.runs}")
@@ -314,8 +339,10 @@ CLI detection (auto-mode):
                 args.max_retries,
                 secret=predefined_secret,
                 max_api_calls=args.max_api_calls,
-                timeout_seconds=args.timeout
+                timeout_seconds=args.timeout,
+                turn_callback=turn_callback
             )
+            session.game_num = run
             result = session.run()
 
             # Update summary
@@ -343,6 +370,10 @@ CLI detection (auto-mode):
 
             print()
 
+    # Close turn log file if opened
+    if turn_log_file:
+        turn_log_file.close()
+
     # Final summary
     print("=" * 60)
     print("SUMMARY")
@@ -352,6 +383,8 @@ CLI detection (auto-mode):
     print(f"Losses: {results_summary['losses']} ({results_summary['losses']/args.runs*100:.1f}%)")
     print(f"Errors: {results_summary['errors']} ({results_summary['errors']/args.runs*100:.1f}%)")
     print(f"\nResults saved to: {output_path}")
+    if args.turn_log:
+        print(f"Turn log saved to: {args.turn_log}")
 
 
 if __name__ == '__main__':

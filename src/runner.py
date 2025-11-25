@@ -28,7 +28,7 @@ class GameResult:
 class GameSession:
     """Manages a complete game session with retry logic."""
 
-    def __init__(self, game_config: GameConfig, player, max_retries: int = 1, secret: Optional[list[int]] = None, max_api_calls: int = 100, timeout_seconds: float = 300):
+    def __init__(self, game_config: GameConfig, player, max_retries: int = 1, secret: Optional[list[int]] = None, max_api_calls: int = 100, timeout_seconds: float = 300, turn_callback=None):
         """
         Initialize game session.
 
@@ -39,6 +39,7 @@ class GameSession:
             secret: Optional predefined secret code
             max_api_calls: Maximum total API calls per game (default: 100)
             timeout_seconds: Maximum time allowed per game in seconds (default: 300)
+            turn_callback: Optional callback(game_num, turn_data, secret) called after each turn
         """
         self.game_config = game_config
         self.player = player
@@ -46,6 +47,8 @@ class GameSession:
         self.predefined_secret = secret
         self.max_api_calls = max_api_calls
         self.timeout_seconds = timeout_seconds
+        self.turn_callback = turn_callback
+        self.game_num = 0
 
     def run(self) -> GameResult:
         """Run a complete game and return results."""
@@ -74,6 +77,10 @@ class GameSession:
 
                 turn_result = self._execute_turn(game, turns)
                 turns.append(turn_result)
+
+                # Call turn callback if provided
+                if self.turn_callback:
+                    self.turn_callback(self.game_num, turn_result, game.secret)
 
                 # Count API calls (each turn makes at least one)
                 api_call_count += 1
