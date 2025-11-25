@@ -28,6 +28,15 @@ class CLIConfig:
     cli_tool: str  # 'claude', 'codex', or 'gemini'
     timeout: int = 120  # seconds
 
+    # Test configuration flags
+    use_json_schema: bool = True          # Test E: False
+    use_output_format_json: bool = True   # Test B: False (already tested)
+    model_override: str | None = None     # Test G: 'sonnet'
+    append_system_prompt: str | None = None  # Test H: strategy text
+    tools_override: str | None = None     # Test J: '' for no tools, None for default
+    prompt_prefix: str | None = None      # Test K: 'Ultrathink. '
+    strict_schema: bool = False           # Test L: additionalProperties: false
+
 
 class CLIPlayer:
     """Player that uses a local CLI tool to generate guesses."""
@@ -135,6 +144,9 @@ CRITICAL: The JSON must be valid and parseable. Wrap it in ```json code fences i
             },
             "required": ["guess"]
         }
+        # Test L: Add strict validation
+        if self.cli_config.strict_schema:
+            schema["additionalProperties"] = False
         return json.dumps(schema)
 
     def _build_prompt(self, game_history: list[dict], retry_count: int) -> str:
@@ -163,7 +175,11 @@ CRITICAL: The JSON must be valid and parseable. Wrap it in ```json code fences i
 
         parts.append("\nAssistant:")
 
-        return "\n".join(parts)
+        prompt = "\n".join(parts)
+        # Test K: Add prompt prefix (e.g., "Ultrathink. ")
+        if self.cli_config.prompt_prefix:
+            prompt = self.cli_config.prompt_prefix + prompt
+        return prompt
 
     def _call_cli(self, prompt: str) -> str:
         """Call the CLI tool with the prompt."""
@@ -171,9 +187,29 @@ CRITICAL: The JSON must be valid and parseable. Wrap it in ```json code fences i
 
         # Build command with output format flags
         if cli_tool == 'claude':
-            # Use JSON schema for structured output validation
-            schema = self._build_json_schema()
-            cmd = ['claude', '--print', '--output-format', 'json', '--json-schema', schema]
+            cmd = ['claude', '--print']
+
+            # Output format (Test E: with json but no schema)
+            if self.cli_config.use_output_format_json:
+                cmd.extend(['--output-format', 'json'])
+
+            # JSON schema for constrained decoding
+            if self.cli_config.use_json_schema:
+                schema = self._build_json_schema()
+                cmd.extend(['--json-schema', schema])
+
+            # Model override (Test G: sonnet comparison)
+            if self.cli_config.model_override:
+                cmd.extend(['--model', self.cli_config.model_override])
+
+            # Append system prompt (Test H: strategy hints)
+            if self.cli_config.append_system_prompt:
+                cmd.extend(['--append-system-prompt', self.cli_config.append_system_prompt])
+
+            # Tools override (Test J: no tools)
+            if self.cli_config.tools_override is not None:
+                cmd.extend(['--tools', self.cli_config.tools_override])
+
             stdin_input = prompt
         elif cli_tool == 'codex':
             # Codex uses exec subcommand with positional arguments
